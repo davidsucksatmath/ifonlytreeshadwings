@@ -39,6 +39,7 @@ pathToCloneLabel.TextXAlignment = Enum.TextXAlignment.Left
 pathToCloneLabel.Parent = mainFrame
 
 local pathToCloneBox = Instance.new("TextBox")
+pathToCloneBox.ClearTextOnFocus = false
 pathToCloneBox.Size = UDim2.new(1, -20, 0, 25)
 pathToCloneBox.Position = UDim2.new(0, 10, 0, 60)
 pathToCloneBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -61,6 +62,7 @@ buildPathLabel.TextXAlignment = Enum.TextXAlignment.Left
 buildPathLabel.Parent = mainFrame
 
 local buildPathBox = Instance.new("TextBox")
+pathToCloneBox.ClearTextOnFocus = false
 buildPathBox.Size = UDim2.new(1, -20, 0, 25)
 buildPathBox.Position = UDim2.new(0, 10, 0, 110)
 buildPathBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
