@@ -73,6 +73,9 @@ buildPathBox.Font = Enum.Font.SourceSans
 buildPathBox.TextSize = 14
 buildPathBox.Parent = mainFrame
 
+-- ✅ ADD THIS FIX
+buildPathBox.ClearTextOnFocus = false
+
 -- Buttons
 local cloneButton = Instance.new("TextButton")
 cloneButton.Size = UDim2.new(0.45, 0, 0, 30)
@@ -167,7 +170,13 @@ cloneButton.MouseButton1Click:Connect(function()
     if instance then
         local tree = buildTree(instance)
         buildPathBox.Text = path
-        pathToCloneBox.Text = HttpService:JSONEncode(tree)
+
+        -- ✅ FIX HERE: avoid focus issues before setting text
+        UserInputService:SetFocusedTextBox(nil)
+        task.defer(function()
+            pathToCloneBox.Text = HttpService:JSONEncode(tree)
+        end)
+
         setclipboard(tostring(tree))
     else
         warn("Path not correct: cannot find instance to clone")
