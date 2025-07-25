@@ -1,6 +1,6 @@
 local module = {}
 
-local HttpService = game:GetService("HttpService")
+--local HttpService = game:GetService("HttpService")
 
 local cloner_exploit = require(script.cloner)
 local iris = require(script.iris).Init()
