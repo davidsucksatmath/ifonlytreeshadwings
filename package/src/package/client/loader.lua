@@ -1,7 +1,7 @@
--- Main GitHub path
+-- GitHub raw base URL
 local BASE = "https://raw.githubusercontent.com/davidsucksatmath/ifonlytreeshadwings/main/package/src/package/client/"
 
--- List of all relative Lua module paths
+-- List of all Lua files (relative to BASE)
 local files = {
     "cloner/init.lua",
     "cloner/properties.lua",
@@ -30,19 +30,20 @@ local files = {
     "iris/widgets/Window.lua",
 }
 
--- Utility to split a path by "/"
+-- Split path into parts (e.g., "iris/widgets/Button" → { "iris", "widgets", "Button" })
 local function splitPath(path)
     local t = {}
-    for part in path:gmatch("[^/]+") do
-        table.insert(t, part:gsub("%.lua$", "")) -- remove ".lua"
+    for part in string.gmatch(path, "[^/]+") do
+        part = part:gsub("%.lua$", "") -- Remove .lua extension
+        t[#t + 1] = part
     end
     return t
 end
 
--- Module registry
+-- Root of module tree
 local registry = {}
 
--- Build fake tree
+-- Build tree structure and attach loaders
 for _, path in ipairs(files) do
     local parts = splitPath(path)
     local current = registry
@@ -50,6 +51,7 @@ for _, path in ipairs(files) do
         current[parts[i]] = current[parts[i]] or {}
         current = current[parts[i]]
     end
+
     local moduleName = parts[#parts]
     current[moduleName] = {
         __isModule = true,
@@ -58,9 +60,21 @@ for _, path in ipairs(files) do
     }
 end
 
--- Load module source
+-- Inject fake script.parent links for require(script.X)
+local function injectParents(tbl, parent)
+    for name, value in pairs(tbl) do
+        if type(value) == "table" then
+            value.__parent = tbl
+            injectParents(value, tbl)
+        end
+    end
+end
+injectParents(registry)
+
+-- Load module source with fake script tree
 local function loadModule(module)
     if module.__loaded then return module.__value end
+
     local src = game:HttpGet(module.__src)
     local env = {
         script = setmetatable({}, {
@@ -69,7 +83,8 @@ local function loadModule(module)
             end
         })
     }
-    setmetatable(env, {__index = getfenv()})
+    setmetatable(env, { __index = getfenv() })
+
     local fn = loadstring(src)
     setfenv(fn, env)
     module.__value = fn()
@@ -77,22 +92,10 @@ local function loadModule(module)
     return module.__value
 end
 
--- Recursively inject parents for fake script lookup
-local function injectParents(tbl, parent)
-    for k, v in pairs(tbl) do
-        if type(v) == "table" and v.__isModule then
-            v.__parent = tbl
-        elseif type(v) == "table" then
-            injectParents(v, tbl)
-        end
-    end
-end
-injectParents(registry)
-
--- Simulate running `require(script.cloner)` etc.
+-- Replace require(script.X) simulation
 local function fakeRequire(mod)
     return loadModule(mod)
 end
 
--- Now run your main script (init)
-return fakeRequire(registry["cloner"]) -- or ["init"], depending on which is your true entry point
+-- 🔥 Entry point (load cloner/init.lua or iris/init.lua or whatever)
+return fakeRequire(registry.cloner)
