@@ -166,6 +166,7 @@ cloneButton.MouseButton1Click:Connect(function()
         local tree = buildTree(instance)
         buildPathBox.Text = path
         pathToCloneBox.Text = HttpService:JSONEncode(tree)
+        setclipboard(tostring(tree))
     else
         warn("Path not correct: cannot find instance to clone")
     end
