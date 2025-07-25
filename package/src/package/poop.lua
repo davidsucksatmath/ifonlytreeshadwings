@@ -2398,7 +2398,7 @@ cloneButton.MouseButton1Click:Connect(function()
         buildPathBox.Text = path
 
         -- ✅ FIX HERE: avoid focus issues before setting text
-        UserInputService:SetFocusedTextBox(nil)
+        --UserInputService:SetFocusedTextBox(nil)
         task.defer(function()
             pathToCloneBox.Text = HttpService:JSONEncode(tree)
         end)
