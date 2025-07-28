@@ -4,19 +4,7 @@
 local HttpService = game:GetService("HttpService")
 
 local targetting_paths = {
-	"Workspace",
-	"Players",
-	"Lighting",
-	"MaterialService",
-	"NetworkClient",
-	"ReplicatedFirst",
 	"ReplicatedStorage",
-	"StarterGui",
-	"StarterPack",
-	"StarterPlayer",
-	"Teams",
-	"SoundService",
-	"TextChatService"
 }
 
 local m_Properties = {
@@ -2686,16 +2674,14 @@ end
 
 local str = rep.repr(trees)
 
---local tb = Instance.new("TextBox")
---tb.ClearTextOnFocus = false
---tb.Text = str
---tb.Size = UDim2.fromOffset(50, 50)
---tb.Position = UDim2.fromScale(0.5, 0.5)
---tb.AnchorPoint = Vector2.new(0.5, 0.5)
---local sg = Instance.new("ScreenGui")
---sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
---tb.Parent = sg
---sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
---tb.ZIndex = math.huge
-
-return str
+local tb = Instance.new("TextBox")
+tb.ClearTextOnFocus = false
+tb.Text = str
+tb.Size = UDim2.fromOffset(50, 50)
+tb.Position = UDim2.fromScale(0.5, 0.5)
+tb.AnchorPoint = Vector2.new(0.5, 0.5)
+local sg = Instance.new("ScreenGui")
+sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+tb.Parent = sg
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
+tb.ZIndex = math.huge
