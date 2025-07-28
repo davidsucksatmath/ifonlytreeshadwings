@@ -2590,7 +2590,7 @@ function rep.repr(value, reprSettings)
 			local s = {}
 			for _, enumItem in pairs(Enum.NormalId:GetEnumItems()) do
 				if v[enumItem.Name] then
-					table.insert(s, repr(enumItem, reprSettings))
+					table.insert(s, rep.repr(enumItem, reprSettings))
 				end
 			end
 			return ("Faces.new(%s)"):format(table.concat(s, ", "))
