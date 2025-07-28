@@ -1,105 +1,25 @@
+--!nocheck
+--!nolint
+
 local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TextService = game:GetService("TextService")
-local Players = game:GetService("Players")
 
--- Simple UI Framework
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ObjectClonerUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+local targetting_paths = {
+	"Workspace",
+	"Players",
+	"Lighting",
+	"MaterialService",
+	"NetworkClient",
+	"ReplicatedFirst",
+	"ReplicatedStorage",
+	"StarterGui",
+	"StarterPack",
+	"StarterPlayer",
+	"Teams",
+	"SoundService",
+	"TextChatService"
+}
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "Object Cloner"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18
-title.BackgroundTransparency = 1
-title.Parent = mainFrame
-
--- Input fields
-local pathToCloneLabel = Instance.new("TextLabel")
-pathToCloneLabel.Size = UDim2.new(1, -20, 0, 20)
-pathToCloneLabel.Position = UDim2.new(0, 10, 0, 40)
-pathToCloneLabel.Text = "Path to clone:"
-pathToCloneLabel.TextColor3 = Color3.new(1, 1, 1)
-pathToCloneLabel.Font = Enum.Font.SourceSans
-pathToCloneLabel.TextSize = 14
-pathToCloneLabel.BackgroundTransparency = 1
-pathToCloneLabel.TextXAlignment = Enum.TextXAlignment.Left
-pathToCloneLabel.Parent = mainFrame
-
-local pathToCloneBox = Instance.new("TextBox")
-pathToCloneBox.ClearTextOnFocus = false
-pathToCloneBox.Size = UDim2.new(1, -20, 0, 25)
-pathToCloneBox.Position = UDim2.new(0, 10, 0, 60)
-pathToCloneBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-pathToCloneBox.BorderSizePixel = 0
-pathToCloneBox.Text = ""
-pathToCloneBox.TextColor3 = Color3.new(1, 1, 1)
-pathToCloneBox.Font = Enum.Font.SourceSans
-pathToCloneBox.TextSize = 14
-pathToCloneBox.Parent = mainFrame
-
-local buildPathLabel = Instance.new("TextLabel")
-buildPathLabel.Size = UDim2.new(1, -20, 0, 20)
-buildPathLabel.Position = UDim2.new(0, 10, 0, 90)
-buildPathLabel.Text = "Path to build from:"
-buildPathLabel.TextColor3 = Color3.new(1, 1, 1)
-buildPathLabel.Font = Enum.Font.SourceSans
-buildPathLabel.TextSize = 14
-buildPathLabel.BackgroundTransparency = 1
-buildPathLabel.TextXAlignment = Enum.TextXAlignment.Left
-buildPathLabel.Parent = mainFrame
-
-local buildPathBox = Instance.new("TextBox")
-pathToCloneBox.ClearTextOnFocus = false
-buildPathBox.Size = UDim2.new(1, -20, 0, 25)
-buildPathBox.Position = UDim2.new(0, 10, 0, 110)
-buildPathBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-buildPathBox.BorderSizePixel = 0
-buildPathBox.Text = ""
-buildPathBox.TextColor3 = Color3.new(1, 1, 1)
-buildPathBox.Font = Enum.Font.SourceSans
-buildPathBox.TextSize = 14
-buildPathBox.Parent = mainFrame
-
--- ✅ ADD THIS FIX
-buildPathBox.ClearTextOnFocus = false
-
--- Buttons
-local cloneButton = Instance.new("TextButton")
-cloneButton.Size = UDim2.new(0.45, 0, 0, 30)
-cloneButton.Position = UDim2.new(0.025, 0, 0, 145)
-cloneButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-cloneButton.BorderSizePixel = 0
-cloneButton.Text = "Clone"
-cloneButton.TextColor3 = Color3.new(1, 1, 1)
-cloneButton.Font = Enum.Font.SourceSans
-cloneButton.TextSize = 14
-cloneButton.Parent = mainFrame
-
-local buildButton = Instance.new("TextButton")
-buildButton.Size = UDim2.new(0.45, 0, 0, 30)
-buildButton.Position = UDim2.new(0.525, 0, 0, 145)
-buildButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-buildButton.BorderSizePixel = 0
-buildButton.Text = "Build"
-buildButton.TextColor3 = Color3.new(1, 1, 1)
-buildButton.Font = Enum.Font.SourceSans
-buildButton.TextSize = 14
-buildButton.Parent = mainFrame
-
-local properties_tbl = {
+local m_Properties = {
 	Accessory = {
 		"AccessoryType"
 	},
@@ -2328,139 +2248,174 @@ local properties_tbl = {
 	}
 }
 
--- Core functionality
-local function getInstanceFromPath(path)
-    local current = game
-    for part in path:gmatch("[^%.]+") do
-        if part ~= "game" then
-            current = current:FindFirstChild(part)
-            if not current then return nil end
-        end
-    end
-    return current
+local function get_instance(path)
+	local current = game
+	for part in path:gmatch("[^%.]+") do
+		current = current and current:FindFirstChild(part)
+	end
+	return current
 end
 
-local function extractProperties(instance)
-    local class_name = instance.ClassName
-    local to_extract = properties_tbl[class_name] or {}
-    
-    local data = {}
-    for _, prop_name in ipairs(to_extract) do
-        data[prop_name] = instance[prop_name]
-    end
-    return data
+local function format_value(value)
+	local typeOfValue = typeof(value)
+
+	if typeOfValue == "CFrame" then
+		local x, y, z = value:GetComponents()
+		return string.format("CFrame.new(%s, %s, %s)", x, y, z)
+	elseif typeOfValue == "Vector3" then
+		return string.format("Vector3.new(%s, %s, %s)", value.X, value.Y, value.Z)
+	elseif typeOfValue == "Vector2" then
+		return string.format("Vector2.new(%s, %s)", value.X, value.Y)
+	elseif typeOfValue == "Color3" then
+		return string.format("Color3.new(%s, %s, %s)", value.R, value.G, value.B)
+	elseif typeOfValue == "UDim" then
+		return string.format("UDim.new(%s, %s)", value.Scale, value.Offset)
+	elseif typeOfValue == "UDim2" then
+		return string.format("UDim2.new(%s, %s, %s, %s)", 
+			value.X.Scale, value.X.Offset, 
+			value.Y.Scale, value.Y.Offset)
+	elseif typeOfValue == "BrickColor" then
+		return string.format("BrickColor.new(%s)", tostring(value))
+	elseif typeOfValue == "NumberSequence" then
+		local points = {}
+		for _, point in ipairs(value.Keypoints) do
+			table.insert(points, string.format("%s, %s", point.Time, point.Value))
+		end
+		return string.format("NumberSequence.new(%s)", table.concat(points, ", "))
+	elseif typeOfValue == "ColorSequence" then
+		local points = {}
+		for _, point in ipairs(value.Keypoints) do
+			table.insert(points, string.format("%s, Color3.new(%s, %s, %s)", 
+				point.Time, point.Value.R, point.Value.G, point.Value.B))
+		end
+		return string.format("ColorSequence.new(%s)", table.concat(points, ", "))
+	elseif typeOfValue == "Rect" then
+		return string.format("Rect.new(%s, %s, %s, %s)", 
+			value.Min.X, value.Min.Y, 
+			value.Max.X, value.Max.Y)
+	elseif typeOfValue == "Ray" then
+		return string.format("Ray.new(Vector3.new(%s, %s, %s), Vector3.new(%s, %s, %s))", 
+			value.Origin.X, value.Origin.Y, value.Origin.Z,
+			value.Direction.X, value.Direction.Y, value.Direction.Z)
+	elseif typeOfValue == "NumberRange" then
+		return string.format("NumberRange.new(%s, %s)", value.Min, value.Max)
+	elseif typeOfValue == "Faces" then
+		local faces = {}
+		-- Check all possible NormalId directions
+		local directions = {"Top", "Bottom", "Left", "Right", "Front", "Back"}
+		for _, dir in ipairs(directions) do
+			if value[dir] then
+				table.insert(faces, string.format("%s", dir))
+			end
+		end
+		return string.format("Faces.new(%s)", table.concat(faces, ", "))
+	elseif typeOfValue == "Region3" then
+		return string.format("Region3.new(Vector3.new(%s, %s, %s), Vector3.new(%s, %s, %s))", 
+			value.CFrame.Position.X, value.CFrame.Position.Y, value.CFrame.Position.Z,
+			value.Size.X, value.Size.Y, value.Size.Z)
+	elseif typeOfValue == "Region3int16" then
+		return string.format("Region3int16.new(Vector3int16.new(%s, %s, %s), Vector3int16.new(%s, %s, %s))", 
+			value.Min.X, value.Min.Y, value.Min.Z,
+			value.Max.X, value.Max.Y, value.Max.Z)
+	elseif typeOfValue == "EnumItem" then
+		return tostring(value) -- Returns "Enum.Material.Plastic" etc.
+	elseif typeOfValue == "Instance" then
+		-- string.format("Instance.new(%s)", value.ClassName)
+		return string.format("%s", value.ClassName)
+	else
+		return tostring(value) -- Fallback for other types
+	end
 end
 
-local function applyProperties(instance, properties)
-    for prop, value in pairs(properties) do
-        pcall(function()
-            instance[prop] = value
-        end)
-    end
+local function get_properties(instance, property_list)
+	local props = {}
+	for class, properties in pairs(property_list) do
+		if instance:IsA(class) then
+			for _, prop in ipairs(properties) do
+				local success, value = pcall(function() 
+					return instance[prop] 
+				end)
+				if success then
+					props[prop] = format_value(value)
+				else
+					props[prop] = nil
+				end
+			end
+		end
+	end
+	return props
 end
 
-local function buildTree(instance)
-    local tree = {
-        class_name = instance.ClassName,
-        name = instance.Name,
-        properties = extractProperties(instance),
-        children = {},
-    }
+local function create_tree(instance)
+	local tree = {
+		class_name = instance.ClassName,
+		name = instance.Name,
+		properties = get_properties(instance, m_Properties),
+		children = {}
+	}
 
-    for _, child in ipairs(instance:GetChildren()) do
-        table.insert(tree.children, buildTree(child))
-    end
+	for _, child in ipairs(instance:GetChildren()) do
+		table.insert(tree.children, create_tree(child))
+	end
 
-    return tree
+	return tree
 end
 
-local function writeTreeIntoInstance(parent, tree)
-    local instance = Instance.new(tree.class_name)
-    instance.Name = tree.name
-    applyProperties(instance, tree.properties)
-    
-    for _, childTree in ipairs(tree.children) do
-        writeTreeIntoInstance(instance, childTree)
-    end
-    
-    instance.Parent = parent
-    return instance
+local trees = {}
+for _, path in ipairs(targetting_paths) do
+	local instance = get_instance(path)
+	if instance then
+		trees[path] = create_tree(instance)
+	end
 end
 
--- Button actions
-cloneButton.MouseButton1Click:Connect(function()
-    local path = pathToCloneBox.Text
-    if path == "" then return end
-    
-    local instance = getInstanceFromPath(path)
-    if instance then
-        local tree = buildTree(instance)
-        buildPathBox.Text = path
+--local function overwrite_place(trees)
+--	for path, tree in pairs(trees) do
+--		local the_service = game:GetService(tree.class_name)
+--		if the_service then
+--			for prop, value in next, tree.properties do
+--				local success, err = pcall(function()
+--					the_service[prop] = value
+--				end)
+--			end
 
-        -- ✅ FIX HERE: avoid focus issues before setting text
-        task.defer(function()
-            pathToCloneBox.Text = HttpService:JSONEncode(tree)
-        end)
+--			local function process_children(parent_instance, children)
+--				for _, child in ipairs(children) do
+--					local child_instance = parent_instance:FindFirstChild(child.name)
+--					if not child_instance then
+--						child_instance = Instance.new(child.class_name)
+--						child_instance.Name = child.name
+--						child_instance.Parent = parent_instance
+--					end
 
-    else
-        warn("Path not correct: cannot find instance to clone")
-    end
-end)
+--					for prop, value in next, child.properties do
+--						local success, err = pcall(function()
+--							child_instance[prop] = value
+--						end)
+--					end
 
-buildButton.MouseButton1Click:Connect(function()
-    local buildPath = buildPathBox.Text
-    if buildPath == "" then return end
-    
-    local instance = getInstanceFromPath(buildPath)
-    if not instance then
-        warn("Build path not correct: instance not found")
-        return
-    end
+--					if next(child.children) then
+--						process_children(child_instance, child.children)
+--					end
+--				end
+--			end
 
-    local success, tree = pcall(function()
-        return HttpService:JSONDecode(pathToCloneBox.Text)
-    end)
+--			process_children(the_service, tree.children)
+--		end
+--	end
+--end
 
-    if success and tree then
-        writeTreeIntoInstance(instance, tree)
-    else
-        warn("Failed to decode tree JSON")
-    end
-end)
+local rep = require(script.ModuleScript)
+local str = rep(trees)
 
--- Simple draggable window
-local dragging
-local dragInput
-local dragStart
-local startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-title.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-title.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
-end)
+local tb = Instance.new("TextBox")
+tb.ClearTextOnFocus = false
+tb.Text = str
+tb.Size = UDim2.fromOffset(50, 50)
+tb.Position = UDim2.fromScale(0.5, 0.5)
+tb.AnchorPoint = Vector2.new(0.5, 0.5)
+local sg = Instance.new("ScreenGui")
+sg.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+tb.Parent = sg
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Global
+tb.ZIndex = math.huge
